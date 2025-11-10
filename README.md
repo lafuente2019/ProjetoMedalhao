@@ -153,7 +153,7 @@ merge_delta_table(df, "workspace.bronze_etl.boi_gordo")
 
 | Coluna | Tipo | Descrição |
 |---------|------|-----------|
-| `Data` | string | Mês/Ano da cotação |
+| `Data` | date | Mês/Ano da cotação |
 | `valor` | double | Preço médio do boi gordo |
 | `data_coleta` | timestamp | Data/hora da coleta ajustada para o fuso horário de São Paulo |
 
@@ -161,32 +161,35 @@ merge_delta_table(df, "workspace.bronze_etl.boi_gordo")
 
 ## 🥈 Camada Silver — Integração Econômica (IPCA + Boi Gordo)
 
-*(mantida conforme versão anterior, com join, padronização de datas e deduplicação)*
+### Objetivo
+
+Integrar os dados do **IPCA** e do **Boi Gordo**, formatando datas, ajustando tipos e consolidando ambos em uma única tabela.
+
+### Principais etapas
+- Leitura das tabelas Bronze (`ipca`, `boi_gordo`)
+- Padronização de colunas e formatação de datas (`yyyy-MM`)
+- Junção e deduplicação (`data_coleta`, `data`)
+- Conversão de vírgula para ponto no campo `boi_gordo`
+- Gravação incremental via `merge_delta_table`
 
 ---
 
 ## 🥇 Camada Gold — Insights Econômicos (Variação Percentual)
 
-*(mantida conforme versão anterior, com cálculo de variação percentual mensal e MERGE final)*
+### Objetivo
 
----
+Gerar indicadores de **variação percentual mensal** do IPCA e do Boi Gordo.
 
-## 🔁 Fluxo de Dados
-
-```mermaid
-graph TD
-    A[API Banco Central (IPCA)] -->|Ingestão| B[workspace.bronze_etl.ipca]
-    A2[CSV - Boi Gordo] -->|Ingestão| B2[workspace.bronze_etl.boi_gordo]
-    B & B2 -->|Transformação + Join| C[workspace.silver_etl.economia]
-    C -->|Cálculo de variações percentuais| D[workspace.gold_etl.varicacao_ipca_boiGordo]
-```
+- Deduplicação por `data`
+- Cálculo da variação percentual via `Window.orderBy("data")`
+- Gravação incremental com `merge_delta_table`
 
 ---
 
 ## 🧠 Boas Práticas Implementadas
 
 - ✅ Arquitetura **Medalhão** (Bronze, Silver, Gold)
-- ✅ Função **inteligente** `merge_delta_table` com chaves dinâmicas
+- ✅ Função genérica e reutilizável `merge_delta_table`
 - ✅ Deduplicação (`dropDuplicates`)
 - ✅ Tratamento de `NULL` e divisão segura (`F.coalesce`, `F.when`)
 - ✅ Timezone local (`America/Sao_Paulo`)
@@ -198,6 +201,25 @@ graph TD
 ## 🧾 Autor
 
 **Valter Lafuente Junior**  
-💼 Data Engineer 
+💼 Data Engineer
 📅 Projeto: *Pipeline Medalhão Delta Lake (Economia)*  
 📍 Stack: *Databricks • PySpark • Delta Lake • GCP*
+
+---
+
+## 📎 Estrutura Final das Tabelas
+
+| Camada | Tabela | Descrição |
+|--------|---------|------------|
+| Bronze | `workspace.bronze_etl.ipca` | Dados brutos do IPCA coletados da API |
+| Bronze | `workspace.bronze_etl.boi_gordo` | Dados de cotação do Boi Gordo importados via CSV |
+| Silver | `workspace.silver_etl.economia` | Junção e padronização de IPCA + Boi Gordo |
+| Gold | `workspace.gold_etl.varicacao_ipca_boiGordo` | Indicadores de variação percentual |
+
+---
+
+## 🚀 Próximos Passos
+
+- Automatizar ingestão via **Databricks Jobs**
+- Publicar camada Gold no **Power BI / Looker**
+- Criar dashboard de variação econômica mensal
