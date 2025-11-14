@@ -5,6 +5,7 @@ from pyspark.sql import SparkSession
 spark = SparkSession.builder.getOrCreate()
 
 
+
 def get_merge_condition(tabela_destino: str) -> str:
     """
     Retorna a condição de MERGE (string SQL) de acordo com a tabela de destino.
