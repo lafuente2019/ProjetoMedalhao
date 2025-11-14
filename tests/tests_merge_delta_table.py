@@ -1,4 +1,4 @@
-from Utils.merge_utils import get_merge_condition
+from Utils.utils import get_merge_condition
 
 
 def test_get_merge_condition_bronze_ipca():
